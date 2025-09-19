@@ -1,10 +1,7 @@
 import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import { Network, Settings, Activity, Cable } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 
 interface Port {
   id: number;
@@ -30,7 +27,7 @@ interface SwitchNodeProps {
 }
 
 const SwitchNode: React.FC<SwitchNodeProps> = ({ data, isConnectable }) => {
-  const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   
   // Default ports if none provided
   const ports: Port[] = data.ports || [
@@ -50,11 +47,15 @@ const SwitchNode: React.FC<SwitchNodeProps> = ({ data, isConnectable }) => {
   const activePortsCount = ports.filter(p => p.status === 'active').length;
 
   return (
-    <div className={`relative px-4 py-3 border-2 rounded-lg bg-card text-card-foreground min-w-[140px] transition-all duration-300 ${
-      data.isActive 
-        ? 'border-secondary glow-secondary animate-pulse-glow' 
-        : 'border-border hover:border-secondary/50'
-    }`}>
+    <div 
+      className={`relative px-4 py-3 border-2 rounded-lg bg-card text-card-foreground min-w-[140px] transition-all duration-300 cursor-pointer ${
+        data.isActive 
+          ? 'border-secondary glow-secondary animate-pulse-glow' 
+          : 'border-border hover:border-secondary/50'
+      }`}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Connection Handles */}
       <Handle
         type="target"
@@ -85,78 +86,19 @@ const SwitchNode: React.FC<SwitchNodeProps> = ({ data, isConnectable }) => {
       <div className="flex flex-col items-center gap-2">
         <div className="flex items-center gap-2">
           <Network className={`w-6 h-6 ${data.isActive ? 'text-secondary' : 'text-muted-foreground'}`} />
-          <Popover open={isConfigOpen} onOpenChange={setIsConfigOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 w-6 p-0 hover:bg-secondary/20"
-              >
-                <Settings className="w-3 h-3" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-0" side="right">
-              <Card className="border-0 shadow-lg">
-                <div className="p-4">
-                  <div className="flex items-center gap-2 mb-4">
-                    <Network className="w-5 h-5 text-secondary" />
-                    <h3 className="font-semibold">{data.label} Configuration</h3>
-                  </div>
-                  
-                  {/* Port Status */}
-                  <div className="mb-4">
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <Cable className="w-4 h-4" />
-                      Port Status ({activePortsCount}/4 active)
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2">
-                      {ports.map((port) => (
-                        <div key={port.id} className="flex items-center justify-between p-2 bg-muted/50 rounded">
-                          <span className="text-xs font-medium">Port {port.id}</span>
-                          <div className="flex items-center gap-1">
-                            <Badge 
-                              variant={port.status === 'active' ? 'default' : 'secondary'}
-                              className="text-xs h-5"
-                            >
-                              {port.status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{port.speed}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Forwarding Table */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <Activity className="w-4 h-4" />
-                      MAC Address Table
-                    </h4>
-                    <div className="space-y-1 max-h-32 overflow-y-auto">
-                      {forwardingTable.map((entry, index) => (
-                        <div key={index} className="flex items-center justify-between text-xs p-2 bg-muted/30 rounded">
-                          <span className="font-mono">{entry.mac}</span>
-                          <div className="flex items-center gap-2 text-muted-foreground">
-                            <span>P{entry.port}</span>
-                            <span>{entry.age}s</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </PopoverContent>
-          </Popover>
+          {isHovered && (
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-popover border border-border rounded px-2 py-1 text-xs whitespace-nowrap z-10">
+              Click to configure
+            </div>
+          )}
         </div>
         
         <div className="text-sm font-medium">{data.label}</div>
         
         <div className="flex items-center gap-2">
           {data.isActive && (
-            <Badge variant="default" className="text-xs">
-              ACTIVE
+            <Badge variant="default" className="text-xs animate-pulse">
+              FORWARDING
             </Badge>
           )}
           <Badge variant="secondary" className="text-xs">
@@ -169,17 +111,24 @@ const SwitchNode: React.FC<SwitchNodeProps> = ({ data, isConnectable }) => {
           {ports.map((port) => (
             <div
               key={port.id}
-              className={`w-2 h-2 rounded-full ${
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 port.status === 'active' 
-                  ? 'bg-secondary animate-pulse' 
+                  ? `bg-secondary ${data.isActive ? 'animate-pulse shadow-sm shadow-secondary' : ''}` 
                   : port.status === 'error'
-                  ? 'bg-destructive'
+                  ? 'bg-destructive animate-pulse'
                   : 'bg-muted-foreground/30'
               }`}
               title={`Port ${port.id}: ${port.status} (${port.speed})`}
             />
           ))}
         </div>
+
+        {/* Learning indicator when active */}
+        {data.isActive && (
+          <div className="text-xs text-secondary/80 animate-pulse">
+            Learning MACs...
+          </div>
+        )}
       </div>
     </div>
   );

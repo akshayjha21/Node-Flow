@@ -63,9 +63,10 @@ const initialEdges: Edge[] = [
 
 interface NetworkCanvasProps {
   isSimulating: boolean;
+  onSwitchSelect?: (switchInfo: {id: string, name: string}) => void;
 }
 
-const NetworkCanvas: React.FC<NetworkCanvasProps> = ({ isSimulating }) => {
+const NetworkCanvas: React.FC<NetworkCanvasProps> = ({ isSimulating, onSwitchSelect }) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
@@ -152,6 +153,15 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({ isSimulating }) => {
     [reactFlowInstance, nodes.length, setNodes, isSimulating]
   );
 
+  const onNodeClick = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      if (node.type === 'switch' && onSwitchSelect) {
+        onSwitchSelect({ id: node.id, name: node.data.label });
+      }
+    },
+    [onSwitchSelect]
+  );
+
   return (
     <div className="w-full h-full bg-gradient-tech rounded-lg border border-border overflow-hidden">
       <ReactFlow
@@ -163,6 +173,7 @@ const NetworkCanvas: React.FC<NetworkCanvasProps> = ({ isSimulating }) => {
         onInit={setReactFlowInstance}
         onDrop={onDrop}
         onDragOver={onDragOver}
+        onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         className="bg-transparent"
         fitView

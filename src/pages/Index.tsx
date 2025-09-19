@@ -4,9 +4,11 @@ import NetworkCanvas from '../components/NetworkCanvas';
 import NodeToolbar from '../components/NodeToolbar';
 import SimulationControls from '../components/SimulationControls';
 import TrafficMonitor from '../components/TrafficMonitor';
+import SwitchConfigPanel from '../components/SwitchConfigPanel';
 
 const Index = () => {
   const [isSimulating, setIsSimulating] = useState(false);
+  const [selectedSwitch, setSelectedSwitch] = useState<{id: string, name: string} | null>(null);
 
   const handleStartSimulation = () => {
     setIsSimulating(true);
@@ -73,7 +75,10 @@ const Index = () => {
           {/* Network Canvas */}
           <div className="col-span-6">
             <div className="h-full relative">
-              <NetworkCanvas isSimulating={isSimulating} />
+              <NetworkCanvas 
+                isSimulating={isSimulating} 
+                onSwitchSelect={setSelectedSwitch}
+              />
               {isSimulating && (
                 <div className="absolute top-4 right-4 bg-accent/20 border border-accent/30 rounded-lg px-3 py-2">
                   <div className="flex items-center gap-2">
@@ -90,6 +95,17 @@ const Index = () => {
             <TrafficMonitor isSimulating={isSimulating} />
           </div>
         </div>
+
+        {/* Switch Configuration Modal */}
+        {selectedSwitch && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <SwitchConfigPanel
+              switchId={selectedSwitch.id}
+              switchName={selectedSwitch.name}
+              onClose={() => setSelectedSwitch(null)}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
